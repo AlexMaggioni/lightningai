@@ -78,14 +78,14 @@ class LSTM(nn.Module):
             input_t_o = input_o[:, i, :]
 
             # Compute the LSTM gate values
-            it = torch.sigmoid(input_t_i + h @ self.w_hi.T + self.b_hi)
-            ft = torch.sigmoid(input_t_f + h @ self.w_hf.T + self.b_hf)
-            gt = torch.tanh(input_t_g + h @ self.w_hg.T + self.b_hg)
-            ot = torch.sigmoid(input_t_o + h @ self.w_ho.T + self.b_ho)
+            it = F.sigmoid(input_t_i + h @ self.w_hi.T + self.b_hi)
+            ft = F.sigmoid(input_t_f + h @ self.w_hf.T + self.b_hf)
+            gt = F.tanh(input_t_g + h @ self.w_hg.T + self.b_hg)
+            ot = F.sigmoid(input_t_o + h @ self.w_ho.T + self.b_ho)
 
             # Update the cell and hidden state
             c = ft * c + it * gt
-            h = ot * torch.tanh(c)
+            h = ot * F.tanh(c)
 
             # Store output for each time step
             outputs.append(h)  
@@ -114,7 +114,7 @@ class Encoder(nn.Module):
         )
 
         self.dropout = nn.Dropout(p=dropout)
-        self.rnn = nn.LSTM(embedding_size, hidden_size, bidirectional=True, batch_first=True)
+        self.rnn = nn.LSTM(self.embedding_size, self.hidden_size, bidirectional=True, batch_first=True)
 
     def forward(self, inputs, hidden_states):
         """LSTM Encoder.
