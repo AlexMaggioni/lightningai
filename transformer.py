@@ -35,8 +35,6 @@ class LayerNorm(nn.Module):
             The output tensor, having the same shape as `inputs`.
         """
 
-        assert inputs.size(-1) == self.hidden_size, f"Expected hidden_size {self.hidden_size}, but got {inputs.size(-1)}"
-
         # Calculate the mean and standard deviation across the last dimension
         mu = inputs.mean(dim=-1, keepdim=True)
         sigma = torch.var(inputs, unbiased=False, dim=-1, keepdim=True).sqrt()
@@ -62,10 +60,10 @@ class MultiHeadedAttention(nn.Module):
         self.sequence_length = sequence_length
 
         total_size = head_size * num_heads
-        self.query = nn.Linear(total_size, total_size, bias=True)
-        self.key = nn.Linear(total_size, total_size, bias=True)
-        self.value = nn.Linear(total_size, total_size, bias=True)
-        self.output = nn.Linear(total_size, total_size, bias=True)
+        self.query = nn.Linear(total_size, total_size)
+        self.key = nn.Linear(total_size, total_size)
+        self.value = nn.Linear(total_size, total_size)
+        self.output = nn.Linear(total_size, total_size)
 
 
     def get_attention_weights(self, queries, keys, mask=None):
@@ -160,7 +158,7 @@ class MultiHeadedAttention(nn.Module):
         attention_weights = self.get_attention_weights(queries, keys, mask)
 
         # Apply the attention to the values
-        outputs = attention_weights @ values
+        outputs = attention_weights.matmul(values)
 
         # Merge the heads
         outputs = self.merge_heads(outputs)
@@ -276,7 +274,7 @@ class MultiHeadedAttention(nn.Module):
         # Apply the attention
         outputs = self.apply_attention(queries, keys, values, mask)
 
-        # Merge the heads
+        # Get the output
         outputs = self.output(outputs)
 
         return outputs
