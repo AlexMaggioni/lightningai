@@ -63,12 +63,12 @@ class LSTM(nn.Module):
         """
 
         h, c = hidden_states
-        outputs = []
+        outputs = torch.empty((inputs.size(0), inputs.size(1), self.hidden_size), device=inputs.device)
 
-        input_i = inputs @ self.w_ii.T + self.b_ii
-        input_f = inputs @ self.w_if.T + self.b_if
-        input_g = inputs @ self.w_ig.T + self.b_ig
-        input_o = inputs @ self.w_io.T + self.b_io
+        input_i = inputs.matmul(self.w_ii.T) + self.b_ii
+        input_f = inputs.matmul(self.w_if.T) + self.b_if
+        input_g = inputs.matmul(self.w_ig.T) + self.b_ig
+        input_o = inputs.matmul(self.w_io.T) + self.b_io
 
         for i in range(inputs.size(1)):
             
@@ -78,20 +78,16 @@ class LSTM(nn.Module):
             input_t_o = input_o[:, i, :]
 
             # Compute the LSTM gate values
-            it = F.sigmoid(input_t_i + h @ self.w_hi.T + self.b_hi)
-            ft = F.sigmoid(input_t_f + h @ self.w_hf.T + self.b_hf)
-            gt = F.tanh(input_t_g + h @ self.w_hg.T + self.b_hg)
-            ot = F.sigmoid(input_t_o + h @ self.w_ho.T + self.b_ho)
+            it = F.sigmoid(input_t_i + h.matmul(self.w_hi.T) + self.b_hi)
+            ft = F.sigmoid(input_t_f + h.matmul(self.w_hf.T) + self.b_hf)
+            gt = F.tanh(input_t_g + h.matmul(self.w_hg.T) + self.b_hg)
+            ot = F.sigmoid(input_t_o + h.matmul(self.w_ho.T) + self.b_ho)
 
             # Update the cell and hidden state
             c = ft * c + it * gt
             h = ot * F.tanh(c)
 
-            # Store output for each time step
-            outputs.append(h)  
-
-        # Stack outputs along the sequence dimension
-        outputs = torch.stack(outputs, dim=1).squeeze().permute(1, 0, 2)
+            outputs[:, i, :] = h  
 
         return outputs, (h, c)
 
@@ -114,7 +110,10 @@ class Encoder(nn.Module):
         )
 
         self.dropout = nn.Dropout(p=dropout)
-        self.rnn = nn.LSTM(self.embedding_size, self.hidden_size, bidirectional=True, batch_first=True)
+        self.rnn = nn.LSTM(input_size=self.embedding_size,
+                           hidden_size=self.hidden_size,
+                           bidirectional=True,
+                           batch_first=True)
 
     def forward(self, inputs, hidden_states):
         """LSTM Encoder.
